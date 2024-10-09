@@ -230,7 +230,7 @@ Resources:
   AglPublicSubnet2AclInboundHTTP8080:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
-      NetworkAclId: !Ref AglPublicSubnet1Acl
+      NetworkAclId: !Ref AglPublicSubnet2Acl
       RuleNumber: 91
       Protocol: 6 # TCP
       RuleAction: allow
