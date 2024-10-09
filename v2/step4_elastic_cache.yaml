@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: 'Step 4: create Redis ElastiCache'
+Description: 'Step 4: create Redis ElastiCache in private subnet1 and private subnet2'
 
 #################################################################################
 ### Conditions
@@ -42,11 +42,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 6379
           ToPort: 6379
-          CidrIp: 10.0.0.0/24  # allow traffic from public subnet 1
+          CidrIp: 10.0.2.0/24  # allow traffic from private subnet 1
         - IpProtocol: tcp
           FromPort: 6379
           ToPort: 6379
-          CidrIp: 10.0.1.0/24  # allow traffic from public subnet 2
+          CidrIp: 10.0.3.0/24  # allow traffic from private subnet 2
 
   # ElastiCache Redis Replication Group
   AglElastiCacheRedisReplicationGroup:
