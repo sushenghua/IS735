@@ -102,7 +102,7 @@ Resources:
         - Key: Name
           Value: AglAppLbSG
 
-  # Security Group for AngGroupLLC app instance
+  # Security Group for AnyGroupLLC app instance
   AglAppSG:
     Type: AWS::EC2::SecurityGroup
     DependsOn: AglAppLbSG
@@ -130,7 +130,7 @@ Resources:
 #--------------------------------------------------------------------------------
 #------ Security and Subnet Group for AnyGroupLLC database instance
 
-  # Security Group for AngGroupLLC Database instance
+  # Security Group for AnyGroupLLC Database instance
   AglDbSG:
     Type: AWS::EC2::SecurityGroup
     DependsOn:
@@ -148,7 +148,7 @@ Resources:
         - Key: Name
           Value: AglDbSG
 
-  # Subnet Group for AngGroupLLC Database instance
+  # Subnet Group for AnyGroupLLC Database instance
   AglDbSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:

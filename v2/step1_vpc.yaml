@@ -29,14 +29,14 @@ Resources:
       EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: AngGroupLLC VPC
+          Value: AnyGroupLLC VPC
 
   AglIGW:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: AngGroupLLC IGW
+          Value: AnyGroupLLC IGW
 
   AglVPCtoIGWConnection:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -62,7 +62,7 @@ Resources:
           Ref: AWS::Region
       Tags:
         - Key: Name
-          Value: AngGroupLLC PublicSubnet 1
+          Value: AnyGroupLLC PublicSubnet 1
 
   AglPublicRouteTable1:
     Type: AWS::EC2::RouteTable
@@ -71,7 +71,7 @@ Resources:
       VpcId: !Ref AglVPC
       Tags:
         - Key: Name
-          Value: AngGroupLLC PublicRouteTable 1
+          Value: AnyGroupLLC PublicRouteTable 1
 
   AglPublicRoute1:
     Type: AWS::EC2::Route
@@ -98,7 +98,7 @@ Resources:
       VpcId: !Ref AglVPC
       Tags:
         - Key: Name
-          Value: AngGroupLLC Public Subnet 1 NACL
+          Value: AnyGroupLLC Public Subnet 1 NACL
 
   AglPublicSubnet1AclAssociation:
     Type: AWS::EC2::SubnetNetworkAclAssociation
@@ -170,7 +170,7 @@ Resources:
           Ref: AWS::Region
       Tags:
         - Key: Name
-          Value: AngGroupLLC PublicSubnet 2
+          Value: AnyGroupLLC PublicSubnet 2
 
   AglPublicRouteTable2:
     Type: AWS::EC2::RouteTable
@@ -179,7 +179,7 @@ Resources:
       VpcId: !Ref AglVPC
       Tags:
         - Key: Name
-          Value: AngGroupLLC PublicRouteTable 2
+          Value: AnyGroupLLC PublicRouteTable 2
 
   AglPublicRoute2:
     Type: AWS::EC2::Route
@@ -206,7 +206,7 @@ Resources:
       VpcId: !Ref AglVPC
       Tags:
         - Key: Name
-          Value: AngGroupLLC Public Subnet 2 NACL
+          Value: AnyGroupLLC Public Subnet 2 NACL
 
   AglPublicSubnet2AclAssociation:
     Type: AWS::EC2::SubnetNetworkAclAssociation
@@ -277,7 +277,7 @@ Resources:
           Ref: AWS::Region
       Tags:
         - Key: Name
-          Value: AngGroupLLC PrivateSubnet 1
+          Value: AnyGroupLLC PrivateSubnet 1
 
   AglPrivateRouteTable1:
     Type: AWS::EC2::RouteTable
@@ -286,7 +286,7 @@ Resources:
       VpcId: !Ref AglVPC
       Tags:
         - Key: Name
-          Value: AngGroupLLC PrivateRouteTable 1
+          Value: AnyGroupLLC PrivateRouteTable 1
 
   AglPrivateRouteTableAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -311,7 +311,7 @@ Resources:
           Ref: AWS::Region
       Tags:
         - Key: Name
-          Value: AngGroupLLC PrivateSubnet 2
+          Value: AnyGroupLLC PrivateSubnet 2
 
   AglPrivateRouteTable2:
     Type: AWS::EC2::RouteTable
@@ -320,7 +320,7 @@ Resources:
       VpcId: !Ref AglVPC
       Tags:
         - Key: Name
-          Value: AngGroupLLC PrivateRouteTable 2
+          Value: AnyGroupLLC PrivateRouteTable 2
 
   AglPrivateRouteTableAssociation2:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -345,7 +345,7 @@ Resources:
           Ref: AWS::Region
       Tags:
         - Key: Name
-          Value: AngGroupLLC PrivateSubnet 3
+          Value: AnyGroupLLC PrivateSubnet 3
 
   AglPrivateRouteTable3:
     Type: AWS::EC2::RouteTable
@@ -354,7 +354,7 @@ Resources:
       VpcId: !Ref AglVPC
       Tags:
         - Key: Name
-          Value: AngGroupLLC PrivateRouteTable 3
+          Value: AnyGroupLLC PrivateRouteTable 3
 
   AglPrivateRouteTableAssociation3:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -379,7 +379,7 @@ Resources:
           Ref: AWS::Region
       Tags:
         - Key: Name
-          Value: AngGroupLLC PrivateSubnet 4
+          Value: AnyGroupLLC PrivateSubnet 4
 
   AglPrivateRouteTable4:
     Type: AWS::EC2::RouteTable
@@ -388,7 +388,7 @@ Resources:
       VpcId: !Ref AglVPC
       Tags:
         - Key: Name
-          Value: AngGroupLLC PrivateRouteTable 4
+          Value: AnyGroupLLC PrivateRouteTable 4
 
   AglPrivateRouteTableAssociation4:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -411,7 +411,7 @@ Resources:
         - AllocationId
       Tags:
         - Key: Name
-          Value: AngGroupLLC NatGateway 1
+          Value: AnyGroupLLC NatGateway 1
 
   AglNATGatewayEIP1:
     Type: AWS::EC2::EIP
@@ -439,7 +439,7 @@ Resources:
         - AllocationId
       Tags:
         - Key: Name
-          Value: AngGroupLLC NatGateway 2
+          Value: AnyGroupLLC NatGateway 2
 
   AglNATGatewayEIP2:
     Type: AWS::EC2::EIP
