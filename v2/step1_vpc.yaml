@@ -1,0 +1,503 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Step 1: set up VPC with 2 public and 4 private subnets'
+
+#################################################################################
+### Conditions
+#################################################################################
+Conditions:
+  InUsEast1: !Equals
+    - !Ref 'AWS::Region'
+    - us-east-1
+
+#################################################################################
+### Parameters
+#################################################################################
+# Parameters:
+
+#################################################################################
+### Resources
+#################################################################################
+Resources:
+
+#--------------------------------------------------------------------------------
+#------ VPC, Internet Gateway, NAT Gateway, Subnet, route table
+  AglVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC VPC
+
+  AglIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC IGW
+
+  AglVPCtoIGWConnection:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn:
+      - AglIGW
+      - AglVPC
+    Properties:
+      InternetGatewayId: !Ref AglIGW
+      VpcId: !Ref AglVPC
+
+#---------------------------------------
+#------ Public Subnet 1 and Route Table
+  AglPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      MapPublicIpOnLaunch: true
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PublicSubnet 1
+
+  AglPublicRouteTable1:
+    Type: AWS::EC2::RouteTable
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PublicRouteTable 1
+
+  AglPublicRoute1:
+    Type: AWS::EC2::Route
+    DependsOn:
+      - AglPublicRouteTable1
+      - AglVPCtoIGWConnection
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref AglIGW
+      RouteTableId: !Ref AglPublicRouteTable1
+
+  AglPublicRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - AglPublicRouteTable1
+      - AglPublicSubnet1
+    Properties:
+      RouteTableId: !Ref AglPublicRouteTable1
+      SubnetId: !Ref AglPublicSubnet1
+
+  AglPublicSubnet1Acl:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref AglVPC
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC Public Subnet 1 NACL
+
+  AglPublicSubnet1AclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref AglPublicSubnet1
+      NetworkAclId: !Ref AglPublicSubnet1Acl
+
+  AglPublicSubnet1AclInboundHTTP:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref AglPublicSubnet1Acl
+      RuleNumber: 90
+      Protocol: 6 # TCP
+      RuleAction: allow
+      Egress: false # inbound traffic
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 80
+        To: 80
+
+  AglPublicSubnet1AclInboundHTTP8080:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref AglPublicSubnet1Acl
+      RuleNumber: 91
+      Protocol: 6 # TCP
+      RuleAction: allow
+      Egress: false # inbound traffic
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 8080
+        To: 8080
+
+  AglPublicSubnet1AclInboundSSH:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref AglPublicSubnet1Acl
+      RuleNumber: 80
+      Protocol: 6 # TCP
+      RuleAction: allow
+      Egress: false # inbound traffic
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 22
+        To: 22
+
+  AglPublicSubnet1AclOutboundAll:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref AglPublicSubnet1Acl
+      RuleNumber: 90
+      Protocol: -1 # all protocols
+      RuleAction: allow
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+
+#---------------------------------------
+#------ Public Subnet 2 and Route Table
+  AglPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      MapPublicIpOnLaunch: true
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PublicSubnet 2
+
+  AglPublicRouteTable2:
+    Type: AWS::EC2::RouteTable
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PublicRouteTable 2
+
+  AglPublicRoute2:
+    Type: AWS::EC2::Route
+    DependsOn:
+      - AglPublicRouteTable2
+      - AglVPCtoIGWConnection
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref AglIGW
+      RouteTableId: !Ref AglPublicRouteTable2
+
+  AglPublicRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - AglPublicRouteTable2
+      - AglPublicSubnet2
+    Properties:
+      RouteTableId: !Ref AglPublicRouteTable2
+      SubnetId: !Ref AglPublicSubnet2
+
+  AglPublicSubnet2Acl:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref AglVPC
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC Public Subnet 2 NACL
+
+  AglPublicSubnet2AclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref AglPublicSubnet2
+      NetworkAclId: !Ref AglPublicSubnet2Acl
+
+  AglPublicSubnet2AclInboundHTTP:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref AglPublicSubnet2Acl
+      RuleNumber: 90
+      Protocol: 6 # TCP
+      RuleAction: allow
+      Egress: false # inbound traffic
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 80
+        To: 80
+
+  AglPublicSubnet2AclInboundHTTP8080:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref AglPublicSubnet1Acl
+      RuleNumber: 91
+      Protocol: 6 # TCP
+      RuleAction: allow
+      Egress: false # inbound traffic
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 8080
+        To: 8080
+
+  AglPublicSubnet2AclInboundSSH:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref AglPublicSubnet2Acl
+      RuleNumber: 80
+      Protocol: 6 # TCP
+      RuleAction: allow
+      Egress: false # inbound traffic
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 22
+        To: 22
+
+  AglPublicSubnet2AclOutboundAll:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref AglPublicSubnet2Acl
+      RuleNumber: 90
+      Protocol: -1 # all protocols
+      RuleAction: allow
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+
+#---------------------------------------
+#------ Private Subnet 1 and Route Table
+  AglPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PrivateSubnet 1
+
+  AglPrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PrivateRouteTable 1
+
+  AglPrivateRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - AglPrivateRouteTable1
+      - AglPrivateSubnet1
+    Properties:
+      RouteTableId: !Ref AglPrivateRouteTable1
+      SubnetId: !Ref AglPrivateSubnet1
+
+#---------------------------------------
+#------ Private Subnet 2 and Route Table
+  AglPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PrivateSubnet 2
+
+  AglPrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PrivateRouteTable 2
+
+  AglPrivateRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - AglPrivateRouteTable2
+      - AglPrivateSubnet2
+    Properties:
+      RouteTableId: !Ref AglPrivateRouteTable2
+      SubnetId: !Ref AglPrivateSubnet2
+
+#---------------------------------------
+#------ Private Subnet 3 and Route Table
+  AglPrivateSubnet3:
+    Type: AWS::EC2::Subnet
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      CidrBlock: 10.0.4.0/24
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PrivateSubnet 3
+
+  AglPrivateRouteTable3:
+    Type: AWS::EC2::RouteTable
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PrivateRouteTable 3
+
+  AglPrivateRouteTableAssociation3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - AglPrivateRouteTable3
+      - AglPrivateSubnet3
+    Properties:
+      RouteTableId: !Ref AglPrivateRouteTable3
+      SubnetId: !Ref AglPrivateSubnet3
+
+#---------------------------------------
+#------ Private Subnet 4 and Route Table
+  AglPrivateSubnet4:
+    Type: AWS::EC2::Subnet
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      CidrBlock: 10.0.5.0/24
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PrivateSubnet 4
+
+  AglPrivateRouteTable4:
+    Type: AWS::EC2::RouteTable
+    DependsOn: AglVPC
+    Properties:
+      VpcId: !Ref AglVPC
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC PrivateRouteTable 4
+
+  AglPrivateRouteTableAssociation4:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - AglPrivateRouteTable4
+      - AglPrivateSubnet4
+    Properties:
+      RouteTableId: !Ref AglPrivateRouteTable4
+      SubnetId: !Ref AglPrivateSubnet4
+
+#---------------------------------------
+#------ NAT Gateway for Private Subnet 1
+  AglNATGateway1:
+    DependsOn: AglPrivateSubnet1
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref AglPublicSubnet1
+      AllocationId: !GetAtt
+        - AglNATGatewayEIP1
+        - AllocationId
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC NatGateway 1
+
+  AglNATGatewayEIP1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  AglNATGatewayRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: AglPrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: AglNATGateway1
+
+#---------------------------------------
+#------ NAT Gateway for Private Subnet 2
+  AglNATGateway2:
+    DependsOn: AglPrivateSubnet2
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref AglPublicSubnet2
+      AllocationId: !GetAtt
+        - AglNATGatewayEIP2
+        - AllocationId
+      Tags:
+        - Key: Name
+          Value: AngGroupLLC NatGateway 2
+
+  AglNATGatewayEIP2:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  AglNATGatewayRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: AglPrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: AglNATGateway2
+
+#################################################################################
+### Outputs
+#################################################################################
+Outputs:
+
+  ExVPCId:
+    Description: VPC ID
+    Value: !Ref AglVPC
+    Export:
+      Name: AglVpcId
+
+  ExPubNet1Id:
+    Description: PublicSubnet1 ID
+    Value: !Ref AglPublicSubnet1
+    Export:
+      Name: AglPubNet1Id
+
+  ExPubNet2d:
+    Description: PublicSubnet2 ID
+    Value: !Ref AglPublicSubnet2
+    Export:
+      Name: AglPubNet2Id
+
+  ExPriNet1Id:
+    Description: PrivateSubnet1 ID
+    Value: !Ref AglPrivateSubnet1
+    Export:
+      Name: AglPriNet1Id
+
+  ExPriNet2d:
+    Description: PrivateSubnet2 ID
+    Value: !Ref AglPrivateSubnet2
+    Export:
+      Name: AglPriNet2Id
+
+  ExPriNet3d:
+    Description: PrivateSubnet3 ID
+    Value: !Ref AglPrivateSubnet3
+    Export:
+      Name: AglPriNet3Id
+
+  ExPriNet4d:
+    Description: PrivateSubnet4 ID
+    Value: !Ref AglPrivateSubnet4
+    Export:
+      Name: AglPriNet4Id

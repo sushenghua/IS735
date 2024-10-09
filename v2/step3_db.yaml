@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Step 3: create S3 bucket, RDS database'
+
+#################################################################################
+### Conditions
+#################################################################################
+Conditions:
+  InUsEast1: !Equals
+    - !Ref 'AWS::Region'
+    - us-east-1
+
+#################################################################################
+### Parameters
+#################################################################################
+# Parameters:
+
+#################################################################################
+### Resources
+#################################################################################
+Resources:
+
+#--------------------------------------------------------------------------------
+#------ S3 bucket
+
+  # S3 Bucket
+  AglLogS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "agl-log"
+      # AccessControl: LogDeliveryWrite  # Ensure permissions for log delivery
+      # ObjectOwnership: BucketOwnerEnforced  # Ensure ACLs are disabled by enforcing bucket ownership
+      LifecycleConfiguration:
+        Rules:
+          - Status: Enabled
+            ExpirationInDays: 1  # Logs will be deleted after 1 days
+
+  # S3 Bucket Policy for ELB Access Logs
+  AglLogS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AglLogS3Bucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "logdelivery.elasticloadbalancing.amazonaws.com"
+            Action: "s3:PutObject"
+            Resource: !Sub "${AglLogS3Bucket.Arn}/logs/*"
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: "bucket-owner-full-control"
+
+#--------------------------------------------------------------------------------
+#------ RDS DB instance
+
+  AglDatabase:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      Engine: MariaDB
+      MasterUsername: admin
+      MasterUserPassword: !ImportValue AglVpcId
+      DBInstanceClass: db.t3.micro
+      StorageType: gp2
+      AllocatedStorage: 20
+      MultiAZ: No
+      VPCSecurityGroups:
+        - !ImportValue AglDbSgId
+      DBSubnetGroupName: !ImportValue AglDbSubnetGroupId
+      PubliclyAccessible: false
+      MonitoringInterval: 0
+      Tags:
+        - Key: Name
+          Value: "AnyGroupLLC Database"
+
+#################################################################################
+### Outputs
+#################################################################################
+Outputs:
+
+  ExAglDbId:
+    Description: AglDatabase ID
+    Value: !Ref AglDatabase
+    Export:
+      Name: AglDbId
+
+  ExAglDbEndpoint:
+    Description: AglDatabase Endpoint
+    Value: !GetAtt AglDatabase.Endpoint.Address
+    Export:
+      Name: AglDbEndpoint

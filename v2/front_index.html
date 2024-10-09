@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <title>AnyGroupLLC</title>
+        <style>
+            body {
+                background-color: #2f2f2f;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                font-family: Arial, sans-serif;
+            }
+            .container {
+                text-align: center;
+                color: white;
+                font-weight: bold;
+            }
+            .input-container {
+                margin-top: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .input-container label {
+                margin-bottom: 10px;
+            }
+            button {
+                padding: 10px 15px;
+                font-size: 16px;
+                margin-top: 20px;
+                border: none;
+                background-color: #4CAF50;
+                color: white;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            button:hover {
+                background-color: #45a049;
+            }
+            .response-container {
+                margin-top: 20px;
+                background-color: #333;
+                padding: 10px;
+                border-radius: 5px;
+                color: white;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div>AnyGroupLLC</div>
+            <div class="input-container">
+                <label>
+                    <input type="radio" name="source" value="database" checked /> From Database
+                </label>
+                <label>
+                    <input type="radio" name="source" value="cache" /> From Cache
+                </label>
+                <button onclick="submitInput()">Submit</button>
+            </div>
+            <div class="response-container" id="responseContainer" style="display: none;">
+                <p>Response:</p>
+                <div id="responseValue"></div>
+            </div>
+        </div>
+        <script>
+            function submitInput() {
+                const source = document.querySelector('input[name="source"]:checked').value;
+                fetch(`${window.location.origin.replace(/:\d+$/, '')}:8080/api/value`, {  // Replace with ALB DNS name
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ source: source })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('responseContainer').style.display = 'block';
+                    document.getElementById('responseValue').innerText = JSON.stringify(data);
+                })
+                .catch(error => {
+                    document.getElementById('responseContainer').style.display = 'block';
+                    document.getElementById('responseValue').innerText = 'Error: ' + error;
+                });
+            }
+        </script>
+    </body>
+    </html>

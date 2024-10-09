@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Step 4: create Redis ElastiCache'
+
+#################################################################################
+### Conditions
+#################################################################################
+Conditions:
+  InUsEast1: !Equals
+    - !Ref 'AWS::Region'
+    - us-east-1
+
+#################################################################################
+### Parameters
+#################################################################################
+# Parameters:
+
+
+#################################################################################
+### Resources
+#################################################################################
+Resources:
+
+#--------------------------------------------------------------------------------
+#------ ElasticCache
+# Cache Subnet Group for ElastiCache
+  AglElastiCacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Subnet group for ElastiCache
+      SubnetIds:
+        - !ImportValue AglPriNet1Id
+        - !ImportValue AglPriNet2Id
+      CacheSubnetGroupName: 'AglElastiCacheSubnetGroup'
+
+  # Security Group for ElastiCache
+  AglElastiCacheSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ElastiCache cluster
+      VpcId: !ImportValue AglVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          CidrIp: 10.0.0.0/24  # allow traffic from public subnet 1
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          CidrIp: 10.0.1.0/24  # allow traffic from public subnet 2
+
+  # ElastiCache Redis Replication Group
+  AglElastiCacheRedisReplicationGroup:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupDescription: "Redis replication group"
+      ReplicationGroupId: "agl-redis-replication-group"
+      AutomaticFailoverEnabled: true  # Enable failover to replica
+      CacheNodeType: cache.t2.micro
+      Engine: redis
+      NumCacheClusters: 2  # Primary + 1 replica
+      CacheSubnetGroupName: !Ref AglElastiCacheSubnetGroup
+      SecurityGroupIds:
+        - !Ref AglElastiCacheSg
+      AtRestEncryptionEnabled: false
+      TransitEncryptionEnabled: false
+      SnapshotRetentionLimit: 1  # Number of days to retain automatic snapshots
+      SnapshotWindow: 05:00-06:00  # Daily backup window
+
+#################################################################################
+### Outputs
+#################################################################################
+Outputs:
+  # Export the Primary Endpoint of the Redis Replication Group
+  AglElastiCachePrimaryEndpoint:
+    Description: "Primary endpoint of the Redis ElastiCache Replication Group"
+    Value: !GetAtt AglElastiCacheRedisReplicationGroup.PrimaryEndPoint.Address
+    Export:
+      Name: AglElastiCachePrimaryEndpoint
+
+  # Export the Reader Endpoint (useful for read replicas)
+  AglElastiCacheReaderEndpoint:
+    Description: "Reader endpoint of the Redis ElastiCache Replication Group"
+    Value: !GetAtt AglElastiCacheRedisReplicationGroup.ReaderEndPoint.Address
+    Export:
+      Name: AglElastiCacheReaderEndpoint

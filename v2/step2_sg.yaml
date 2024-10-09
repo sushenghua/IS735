@@ -1,0 +1,203 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Step 2: create Security Group, Database Subnet Group'
+
+#################################################################################
+### Conditions
+#################################################################################
+Conditions:
+  InUsEast1: !Equals
+    - !Ref 'AWS::Region'
+    - us-east-1
+
+#################################################################################
+### Parameters
+#################################################################################
+# Parameters:
+
+#################################################################################
+### Resources
+#################################################################################
+Resources:
+
+#--------------------------------------------------------------------------------
+#------ Security Group for AnyGroupLLC web instance in public subnet
+
+  # Security Group for AnyGroupLLC Web Load Balancer
+  AglWebLbSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !ImportValue AglVpcId
+      GroupName: Agl-WEB-LB-SG
+      GroupDescription: Security group for the web load balancer
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: AglWebLbSG
+
+  # Security Group for AnyGroupLLC web instance
+  AglWebSG:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn: AglWebLbSG
+    Properties:
+      VpcId: !ImportValue AglVpcId
+      GroupName: Agl-WEB-AS-SG
+      GroupDescription: Security group for web instances in the Auto Scaling group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref AglWebLbSG
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref AglWebLbSG
+      Tags:
+        - Key: Name
+          Value: AglWebSG
+
+#--------------------------------------------------------------------------------
+#------ Security Group for AnyGroupLLC app instance in private subnet
+
+  # Security Group for AnyGroupLLC App Load Balancer
+  AglAppLbSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !ImportValue AglVpcId
+      GroupName: Agl-APP-LB-SG
+      GroupDescription: Security group for the app load balancer
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 10.0.0.0/24  # allow 80 traffic from public subnet 1
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 10.0.1.0/24  # allow 80 traffic from public subnet 2
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 10.0.0.0/24  # allow 8080 traffic from public subnet 1
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 10.0.1.0/24  # allow 8080 traffic from public subnet 2
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 10.0.0.0/24  # allow traffic from public subnet 1
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 10.0.1.0/24  # allow traffic from public subnet 2
+      Tags:
+        - Key: Name
+          Value: AglAppLbSG
+
+  # Security Group for AngGroupLLC app instance
+  AglAppSG:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn: AglAppLbSG
+    Properties:
+      VpcId: !ImportValue AglVpcId
+      GroupName: Agl-APP-AS-SG
+      GroupDescription: Security group for web instances in the Auto Scaling group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref AglAppLbSG
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref AglAppLbSG
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref AglAppLbSG
+      Tags:
+        - Key: Name
+          Value: AglAppSG
+
+#--------------------------------------------------------------------------------
+#------ Security and Subnet Group for AnyGroupLLC database instance
+
+  # Security Group for AngGroupLLC Database instance
+  AglDbSG:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn:
+      - AglAppSG
+    Properties:
+      VpcId: !ImportValue AglVpcId
+      GroupName: Agl-DB-SG
+      GroupDescription: Agl-DB-SG
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref AglAppSG
+          IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+      Tags:
+        - Key: Name
+          Value: AglDbSG
+
+  # Subnet Group for AngGroupLLC Database instance
+  AglDbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: Agl-DB-Subnet-Group
+      DBSubnetGroupDescription: Agl-DB-Subnet-Group
+      SubnetIds:
+        - !ImportValue AglPriNet3Id
+        - !ImportValue AglPriNet4Id
+      Tags:
+        - Key: Name
+          Value: AglDbSubnetGroup
+
+#################################################################################
+### Outputs
+#################################################################################
+Outputs:
+
+  ExAglWebLbSgId:
+    Description: AglWebLbSG ID
+    Value: !Ref AglWebLbSG
+    Export:
+      Name: AglWebLbSgId
+
+  ExAglWebSgId:
+    Description: AglWebSG ID
+    Value: !Ref AglWebSG
+    Export:
+      Name: AglWebSgId
+
+  ExAglAppLbSgId:
+    Description: AglAppLbSG ID
+    Value: !Ref AglAppLbSG
+    Export:
+      Name: AglAppLbSgId
+
+  ExAglAppSgId:
+    Description: AglAppSG ID
+    Value: !Ref AglAppSG
+    Export:
+      Name: AglAppSgId
+
+  ExAglDbSgId:
+    Description: AglDbSG ID
+    Value: !Ref AglDbSG
+    Export:
+      Name: AglDbSgId
+
+  ExAglDbSubnetGroupId:
+    Description: AglDbSubnetGroup ID
+    Value: !Ref AglDbSubnetGroup
+    Export:
+      Name: AglDbSubnetGroupId
