@@ -3,23 +3,19 @@ import socket
 from flask import Flask, request, jsonify
 import redis
 import mysql.connector
+import config
 
 app = Flask(__name__)
 
 db = mysql.connector.connect(
-    host='${dbhost}',
-    user='admin',
-    password='${dbpass}',
-    database='testdb'
-)
-db = mysql.connector.connect(
     host=config.dbhost,
     user=config.dbuser,
     password=config.dbpass,
+    database=config.dbname
 )
 
 redis_client = redis.Redis(
-    host='${redishost}',
+    host=config.redishost,
     port=6379,
     db=0
 )
@@ -29,12 +25,10 @@ def get_value():
     try:
         data = request.json
         source = data.get('source', 'database')
-        # print("request received")
         hostname = socket.gethostname()
 
         if source == 'cache':
             response = {'backendhost': hostname, 'value': 'In cache'}
-            #return jsonify(response), 200
             value = redis_client.get('name')
             if value is None:
                 return jsonify({'error': 'Value not found in cache'}), 404
@@ -44,9 +38,8 @@ def get_value():
 
         elif source == 'database':
             response = {'backendhost': hostname, 'value': 'In database'}
-            #return jsonify(response), 200
             cursor = db.cursor()
-            cursor.execute('SELECT value FROM test_table WHERE \\`key\\`=%s', ('name',))
+            cursor.execute('SELECT value FROM test_table WHERE `key`=%s', ('name',))
             result = cursor.fetchone()
             cursor.close()
             if result:

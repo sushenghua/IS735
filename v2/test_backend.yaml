@@ -72,135 +72,35 @@ Resources:
               yum -y update
               yum -y install python3-pip
 
-              # print log
               # sudo cat /var/log/cloud-init-output.log
 
-              # ------ 8080 service
+              # install python packages
               su - ec2-user -c 'pip3 install flask flask-cors requests redis mysql-connector-python'
               su - ec2-user -c 'pip3 uninstall urllib3'
               su - ec2-user -c 'pip3 install "urllib3<2"'
               sleep 3
 
-              # Configure MySQL and Redis setup
-              cat <<EOF > /home/ec2-user/setup.py
-              import mysql.connector
-              import redis
-
-              # MySQL connection
-              db = mysql.connector.connect(
-                  host='${dbhost}',
-                  user='admin',
-                  password='${dbpass}',
-              )
-
-              # Create database and table if not exists
-              cursor = db.cursor()
-              cursor.execute("CREATE DATABASE IF NOT EXISTS testdb")
-              cursor.execute("USE testdb")
-              cursor.execute("""
-                  CREATE TABLE IF NOT EXISTS test_table (
-                      \\`key\\` VARCHAR(255) PRIMARY KEY,
-                      value VARCHAR(255)
-                  )
-              """)
-              cursor.execute("INSERT INTO test_table (\\`key\\`, value) VALUES ('name', 'AnyGroupLLC from RDS') ON DUPLICATE KEY UPDATE value='AnyGroupLLC from RDS'")
-              db.commit()
-              cursor.close()
-              db.close()
-
-              # Redis connection
-              redis_client = redis.Redis(
-                  host='${redishost}',  # Replace with your Redis endpoint
-                  port=6379,
-                  db=0
-              )
-              # Insert key-value pair into Redis
-              redis_client.set('name', 'AnyGroupLLC from RedisCache')
-
-              print("Database and Redis setup completed.")
+              # create config.py for database and cache parameters
+              cat <<EOF > /home/ec2-user/config.py
+              dbhost='${databaseHost}'
+              dbuser='admin'
+              dbpass='${databasePass}'
+              dbname='testdb'
+              redishost='${redisCacheHost}'
               EOF
+              sleep 3
 
-              # Run the setup script
-              chown ec2-user:ec2-user /home/ec2-user/setup.py
-              chmod 755 /home/ec2-user/setup.py
+              # download backend script
+              su - ec2-user -c 'curl -o /home/ec2-user/setup.py https://raw.githubusercontent.com/sushenghua/IS735/refs/heads/main/v2/backend_setup.py'
+              su - ec2-user -c 'curl -o /home/ec2-user/backend.py https://raw.githubusercontent.com/sushenghua/IS735/refs/heads/main/v2/backend.py'
+
+              # run setup script then backend service script
+              chmod 755 /home/ec2-user/*.py
               su - ec2-user -c 'python3 /home/ec2-user/setup.py'
-              sleep 5
-
-              # Write the Flask app for the backend
-              cat <<EOF > /home/ec2-user/backend.py
-              import requests
-              import socket
-              from flask import Flask, request, jsonify
-              # import redis
-              # import mysql.connector
-
-              app = Flask(__name__)
-
-              db = mysql.connector.connect(
-                  host='${dbhost}',
-                  user='admin',
-                  password='${dbpass}',
-                  database='testdb'
-              )
-              redis_client = redis.Redis(
-                  host='${redishost}',
-                  port=6379,
-                  db=0
-              )
-
-              @app.route('/api/value', methods=['POST'])
-              def get_value():
-                  try:
-                      data = request.json
-                      source = data.get('source', 'database')
-                      # print("request received")
-                      hostname = socket.gethostname()
-
-                      if source == 'cache':
-                          response = {'backendhost': hostname, 'value': 'In cache'}
-                          #return jsonify(response), 200
-                          value = redis_client.get('name')
-                          if value is None:
-                              return jsonify({'error': 'Value not found in cache'}), 404
-                          response['value-source'] = 'cache'
-                          response['value'] = value.decode('utf-8')
-                          return jsonify(response), 200
-
-                      elif source == 'database':
-                          response = {'backendhost': hostname, 'value': 'In database'}
-                          #return jsonify(response), 200
-                          cursor = db.cursor()
-                          cursor.execute('SELECT value FROM test_table WHERE \\`key\\`=%s', ('name',))
-                          result = cursor.fetchone()
-                          cursor.close()
-                          if result:
-                              response['value-source'] = 'database'
-                              response['value'] = result[0]
-                              return jsonify(response), 200
-                          else:
-                              return jsonify({'error': 'Value not found in database'}), 404
-
-                      else:
-                          return jsonify({'error': 'Invalid source'}), 400
-
-                  except Exception as e:
-                      return jsonify({'error': str(e)}), 500
-
-              @app.route('/api/health', methods=['GET'])
-              def health_check():
-                  return jsonify({'status': 'healthy'}), 200
-
-              if __name__ == '__main__':
-                  app.run(host='0.0.0.0', port=8080)
-              EOF
-
-              chown ec2-user:ec2-user /home/ec2-user/backend.py
-              chmod 755 /home/ec2-user/backend.py
-
-              sleep 5
+              sleep 3
               su - ec2-user -c 'python3 /home/ec2-user/backend.py &'
 
-            - dbhost: !ImportValue AglDbEndpoint
-              dbpass: !ImportValue AglVpcId
-              redishost: !ImportValue AglElastiCachePrimaryEndpoint
+            - databaseHost: !ImportValue AglDbEndpoint
+              databasePass: !ImportValue AglVpcId
+              redisCacheHost: !ImportValue AglElastiCachePrimaryEndpoint
           

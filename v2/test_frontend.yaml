@@ -71,89 +71,36 @@ Resources:
               #!/bin/bash
               yum -y update
               yum -y install httpd python3-pip
+
+              # web service
               systemctl enable httpd
               systemctl start httpd
 
+              # setup web environment
               find /var/www -type d -exec chmod 2775 {} \;
               find /var/www -type f -exec chmod 0664 {} \;
               usermod -a -G apache ec2-user
               chown -R ec2-user:apache /var/www
               chmod 2775 /var/www
 
-              # mkdir -p /home/ec2-user
-              # chown -R ec2-user:ec2-user /home/ec2-user
-              # print log
-              # sudo cat /var/log/cloud-init-output.log
-
-              # ------ 8080 service
-              su - ec2-user -c 'curl -o /var/www/html/index.html https://raw.githubusercontent.com/sushenghua/IS735/refs/heads/main/v2/front_index.html'
+              # install python packages
               su - ec2-user -c 'pip3 install flask flask-cors requests'
               su - ec2-user -c 'pip3 uninstall urllib3'
               su - ec2-user -c 'pip3 install "urllib3<2"'
-              echo '${vvv}'
-              cat <<EOF > /home/ec2-user/frontend.py
+              sleep 3
 
-              import requests
-              import json
-              from flask import Flask, request, jsonify
-              from flask_cors import CORS
-              import socket
-
-              # Replace with the actual IP or hostname of your backend server
-              backend_url = 'http://localhost:8080/api/value'
-
-              app = Flask(__name__)
-              CORS(app)
-
-              @app.route('/api/value', methods=['POST'])
-              def get_value():
-                  try:
-                      # log data from the incoming request
-                      data = request.json
-                      # print(f"Received data: {data}")
-
-                      # Forward the POST request to the backend with the same JSON data
-                      response = requests.post(backend_url, json=data)
-
-                      # Check if the backend request was successful (status 200)
-                      if response.status_code == 200:
-                          # Parse the JSON response from the backend
-                          backend_data = response.json()
-
-                          # log data
-                          # print(f"Backend response: {backend_data}")
-
-                          # Return the backend response as a JSON response to the original client
-                          backend_data['frontendhost'] = socket.gethostname()
-                          response = jsonify(backend_data)
-                          response.headers.add('Access-Control-Allow-Origin', '*')
-                          return response, 200
-
-                      else:
-                          # Log the backend's response if it failed
-                          print(f"Failed with status code {response.status_code}: {response.text}")
-                          return jsonify({'error': 'Failed to retrieve data from backend', 'details': response.text}), response.status_code
-
-                  except requests.exceptions.RequestException as e:
-                      # Log and return an error if the request to the backend fails
-                      print(f"Error while making request: {e}")
-                      return jsonify({'error': 'Request to backend failed', 'details': str(e)}), 500
-
-                  except Exception as e:
-                      # Catch any other exceptions and return a 500 error
-                      print(f"Unexpected error: {e}")
-                      return jsonify({'error': str(e)}), 500
-
-              @app.route('/api/health', methods=['GET'])
-              def health_check():
-                  return jsonify({'status': 'healthy'}), 200
-
-              if __name__ == '__main__':
-                  app.run(host='0.0.0.0', port=8080)
+              # create config.py for backend params
+              cat <<EOF > /home/ec2-user/config.py
+              backend_url='${backendLbDNS}'
               EOF
+              sleep 3
 
-              chown ec2-user:ec2-user /home/ec2-user/frontend.py
-              chmod 755 /home/ec2-user/frontend.py
+              # download html, frontend.py
+              su - ec2-user -c 'curl -o /var/www/html/index.html https://raw.githubusercontent.com/sushenghua/IS735/refs/heads/main/v2/front_index.html'
+              su - ec2-user -c 'curl -o /home/ec2-user/frontend.py https://raw.githubusercontent.com/sushenghua/IS735/refs/heads/main/v2/frontend.py'
+
+              # run frontend service script
+              chmod 755 /home/ec2-user/*.py
               su - ec2-user -c 'python3 /home/ec2-user/frontend.py &'
-            - vvv: !ImportValue AglVpcId
-          
+            - backendLbDNS: !GetAtt AglAppLb.DNSName
+

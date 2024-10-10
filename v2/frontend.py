@@ -3,10 +3,7 @@ import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import socket
-
-# Replace with the actual IP or hostname of your backend server
-backend_url = 'http://10.0.2.169:8080/api/value'
-backend_url = 'http://internal-BackendLB-1038863322.us-east-1.elb.amazonaws.com:8080/api/value'
+import config
 
 app = Flask(__name__)
 CORS(app)
@@ -14,20 +11,13 @@ CORS(app)
 @app.route('/api/value', methods=['POST'])
 def get_value():
     try:
-        # log data from the incoming request
         data = request.json
-        # print(f"Received data: {data}")
-
         # Forward the POST request to the backend with the same JSON data
-        response = requests.post(backend_url, json=data)
+        response = requests.post(config.backend_url, json=data)
 
         # Check if the backend request was successful (status 200)
         if response.status_code == 200:
-            # Parse the JSON response from the backend
             backend_data = response.json()
-
-            # log data
-            # print(f"Backend response: {backend_data}")
 
             # Return the backend response as a JSON response to the original client
             backend_data['frontendhost'] = socket.gethostname()

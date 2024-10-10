@@ -10,8 +10,8 @@ db = mysql.connector.connect(
 
 # Create database and table if not exists
 cursor = db.cursor()
-cursor.execute("CREATE DATABASE IF NOT EXISTS testdb")
-cursor.execute("USE testdb")
+cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(config.dbname))
+cursor.execute("USE {}}".format(config.dbname))
 cursor.execute("""
     CREATE TABLE IF NOT EXISTS test_table (
         `key` VARCHAR(255) PRIMARY KEY,
@@ -25,7 +25,7 @@ db.close()
 
 # Redis connection
 redis_client = redis.Redis(
-    host='${redishost}',  # Replace with your Redis endpoint
+    host=config.redishost,  # Replace with your Redis endpoint
     port=6379,
     db=0
 )
