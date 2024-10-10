@@ -91,7 +91,7 @@ Resources:
 
               # create config.py for backend params
               cat <<EOF > /home/ec2-user/config.py
-              backend_url='${backendLbDNS}'
+              backend_url='http://${backendLbDNS}:8080/api/value'
               EOF
               sleep 3
 
@@ -100,7 +100,8 @@ Resources:
               su - ec2-user -c 'curl -o /home/ec2-user/frontend.py https://raw.githubusercontent.com/sushenghua/IS735/refs/heads/main/v2/frontend.py'
 
               # run frontend service script
+              chown -R ec2-user:apache /home/ec2-user/*.py
               chmod 755 /home/ec2-user/*.py
               su - ec2-user -c 'python3 /home/ec2-user/frontend.py &'
-            - backendLbDNS: !GetAtt AglAppLb.DNSName
+            - backendLbDNS: !ImportValue AglVpcId
 
