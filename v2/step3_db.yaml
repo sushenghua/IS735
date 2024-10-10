@@ -64,7 +64,7 @@ Resources:
       DBInstanceClass: db.t3.micro
       StorageType: gp2
       AllocatedStorage: 20
-      MultiAZ: No
+      MultiAZ: true
       VPCSecurityGroups:
         - !ImportValue AglDbSgId
       DBSubnetGroupName: !ImportValue AglDbSubnetGroupId
