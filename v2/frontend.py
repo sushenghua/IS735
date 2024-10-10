@@ -6,7 +6,8 @@ import socket
 import config
 
 app = Flask(__name__)
-CORS(app)
+# CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 @app.route('/api/value', methods=['POST'])
 def get_value():
@@ -22,7 +23,7 @@ def get_value():
             # Return the backend response as a JSON response to the original client
             backend_data['frontendhost'] = socket.gethostname()
             response = jsonify(backend_data)
-            response.headers.add('Access-Control-Allow-Origin', '*')
+            # response.headers.add('Access-Control-Allow-Origin', '*')
             return response, 200
 
         else:
