@@ -28,8 +28,8 @@ Resources:
     Properties:
       Description: Subnet group for ElastiCache
       SubnetIds:
-        - !ImportValue AglPriNet1Id
-        - !ImportValue AglPriNet2Id
+        - !ImportValue AglPriNet3Id
+        - !ImportValue AglPriNet4Id
       CacheSubnetGroupName: 'AglElastiCacheSubnetGroup'
 
   # Security Group for ElastiCache
@@ -61,6 +61,10 @@ Resources:
       CacheSubnetGroupName: !Ref AglElastiCacheSubnetGroup
       SecurityGroupIds:
         - !Ref AglElastiCacheSg
+      MultiAZEnabled: true
+      PreferredCacheClusterAZs:
+        - !Select [0, !GetAZs '']
+        - !Select [1, !GetAZs '']
       AtRestEncryptionEnabled: false
       TransitEncryptionEnabled: false
       SnapshotRetentionLimit: 1  # Number of days to retain automatic snapshots

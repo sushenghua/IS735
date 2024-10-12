@@ -11,7 +11,7 @@ db = mysql.connector.connect(
 # Create database and table if not exists
 cursor = db.cursor()
 cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(config.dbname))
-cursor.execute("USE {}}".format(config.dbname))
+cursor.execute("USE {}".format(config.dbname))
 cursor.execute("""
     CREATE TABLE IF NOT EXISTS test_table (
         `key` VARCHAR(255) PRIMARY KEY,
